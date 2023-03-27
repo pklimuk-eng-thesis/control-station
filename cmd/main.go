@@ -14,11 +14,13 @@ func main() {
 	serviceAddress := setupServiceAddress("ADDRESS", ":8080")
 	presenceSensorAddress := setupServiceAddress("PRESENCE_SENSOR_ADDRESS", "http://localhost:8081")
 	gasSensorAddress := setupServiceAddress("GAS_SENSOR_ADDRESS", "http://localhost:8082")
+	doorsSensorAddress := setupServiceAddress("DOORS_SENSOR_ADDRESS", "http://localhost:8083")
 
 	r := gin.Default()
 
 	initializeSensor("PresenceSensor", presenceSensorAddress, "/presenceSensor", r)
 	initializeSensor("GasSensor", gasSensorAddress, "/gasSensor", r)
+	initializeSensor("DoorsSensor", doorsSensorAddress, "/doorsSensor", r)
 
 	log.Printf("Starting service at %s\n", serviceAddress)
 	log.Fatal(r.Run(serviceAddress))
