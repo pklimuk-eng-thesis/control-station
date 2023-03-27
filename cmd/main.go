@@ -11,17 +11,15 @@ import (
 )
 
 func main() {
+	serviceAddress := setupServiceAddress("ADDRESS", ":8080")
+	presenceSensorAddress := setupServiceAddress("PRESENCE_SENSOR_ADDRESS", "http://localhost:8081")
+	gasSensorAddress := setupServiceAddress("GAS_SENSOR_ADDRESS", "http://localhost:8082")
+
 	r := gin.Default()
 
-	initializeSensor("PresenceSensor", "http://localhost:8081", "/presenceSensor", r)
-	initializeSensor("GasSensor", "http://localhost:8082", "/gasSensor", r)
+	initializeSensor("PresenceSensor", presenceSensorAddress, "/presenceSensor", r)
+	initializeSensor("GasSensor", gasSensorAddress, "/gasSensor", r)
 
-	// Gets a service address from the environment variable or uses the default one
-	// serviceAddress := viper.GetString("ADDRESS")
-	serviceAddress := os.Getenv("ADDRESS")
-	if serviceAddress == "" {
-		serviceAddress = ":8080"
-	}
 	log.Printf("Starting service at %s\n", serviceAddress)
 	log.Fatal(r.Run(serviceAddress))
 }
@@ -31,4 +29,12 @@ func initializeSensor(name string, address string, groupName string, r *gin.Engi
 	sensorService := sService.NewSensorService(&sensor)
 	sensorHandler := sHttp.NewSensorHandler(sensorService)
 	sHttp.SetupSensorRouter(r, sensorHandler, groupName)
+}
+
+func setupServiceAddress(identifier string, defaultAddress string) string {
+	address := os.Getenv(identifier)
+	if address == "" {
+		address = defaultAddress
+	}
+	return address
 }
