@@ -3,7 +3,9 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
 	sHttp "github.com/pklimuk-eng-thesis/control-station/pkg/http"
@@ -17,6 +19,14 @@ func main() {
 	doorsSensorAddress := setupServiceAddress("DOORS_SENSOR_ADDRESS", "http://localhost:8083")
 
 	r := gin.Default()
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	initializeSensor("PresenceSensor", presenceSensorAddress, "/presenceSensor", r)
 	initializeSensor("GasSensor", gasSensorAddress, "/gasSensor", r)
