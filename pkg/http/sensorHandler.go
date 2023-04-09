@@ -15,42 +15,32 @@ func NewSensorHandler(service sService.SensorService) *SensorHandler {
 	return &SensorHandler{service: service}
 }
 
-func (h *SensorHandler) IsEnabled(c *gin.Context) {
-	enabled, err := h.service.IsEnabled()
+func (h *SensorHandler) GetInfo(c *gin.Context) {
+	sensorInfo, err := h.service.GetInfo()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, &enabled)
-}
-
-func (h *SensorHandler) Detected(c *gin.Context) {
-	detected, err := h.service.Detected()
-	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, &detected)
+	c.IndentedJSON(http.StatusOK, &sensorInfo)
 }
 
 func (h *SensorHandler) ToggleEnabled(c *gin.Context) {
-	enabled, err := h.service.ToggleEnabled()
+	sensorInfo, err := h.service.ToggleEnabled()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, &enabled)
+	c.IndentedJSON(http.StatusOK, &sensorInfo)
 }
 
 func (h *SensorHandler) ToggleDetected(c *gin.Context) {
-	detected, err := h.service.ToggleDetected()
+	sensorInfo, err := h.service.ToggleDetected()
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, &detected)
+	c.IndentedJSON(http.StatusOK, &sensorInfo)
 }
