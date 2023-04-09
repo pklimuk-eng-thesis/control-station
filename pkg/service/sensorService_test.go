@@ -1,192 +1,134 @@
 package service
 
 import (
-	"errors"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
+	domain "github.com/pklimuk-eng-thesis/control-station/pkg/domain"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeGetRequest(t *testing.T) {
+func TestMakeGetRequest_Success(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("true"))
+		fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
 	}))
 	defer ts.Close()
 
-	s := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts.URL,
-			Name:    "testSensor",
-		},
-	}
-
-	t.Run("detected", func(t *testing.T) {
-		detected, err := makeGetRequest(s.sensor.Address, s.sensor.Name)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		if !detected {
-			t.Errorf("Expected detected to be true, got %v", detected)
-		}
-	})
-
-	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("false"))
-	}))
-	defer ts2.Close()
-
-	s2 := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts2.URL,
-			Name:    "testSensor2",
-		},
-	}
-
-	t.Run("not detected", func(t *testing.T) {
-		detected, err := makeGetRequest(s2.sensor.Address, s2.sensor.Name)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		if detected {
-			t.Errorf("Expected detected to be false, got %v", detected)
-		}
-	})
-
-	ts3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Sensor is disabled"))
-	}))
-	defer ts3.Close()
-
-	s3 := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts3.URL,
-			Name:    "testSensor3",
-		},
-	}
-
-	t.Run("http error", func(t *testing.T) {
-		_, err := makeGetRequest(s3.sensor.Address, s3.sensor.Name)
-		if err == nil {
-			t.Errorf("Expected an error, got none")
-		}
-		if err.Error() != "testSensor3: Sensor is disabled" {
-			t.Errorf("Expected error to be 'testSensor3: Sensor is disabled', got %v", err)
-		}
-	})
-
-	ts4 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid"))
-	}))
-	defer ts4.Close()
-
-	s4 := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts4.URL,
-			Name:    "testSensor4",
-		},
-	}
-
-	t.Run("parse error", func(t *testing.T) {
-		_, err := makeGetRequest(s4.sensor.Address, s4.sensor.Name)
-		if !errors.Is(err, ErrParsingFailed) {
-			t.Errorf("Expected parsing error, got %v", err)
-		}
-	})
+	sensorInfo, err := makeGetRequest(ts.URL, "test-sensor")
+	assert.NoError(t, err)
+	assert.Equal(t, true, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
 }
 
-func TestMakePostRequest(t *testing.T) {
+func TestMakeGetRequest_Failure(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("true"))
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Sensor is disabled")
 	}))
 	defer ts.Close()
 
-	s := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts.URL,
-			Name:    "testSensor",
-		},
-	}
+	sensorInfo, err := makeGetRequest(ts.URL, "test-sensor")
+	assert.Error(t, err)
+	assert.Equal(t, false, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
+}
 
-	t.Run("detected", func(t *testing.T) {
-		detected, err := makePostRequest(s.sensor.Address, s.sensor.Name)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		if !detected {
-			t.Errorf("Expected detected to be true, got %v", detected)
-		}
-	})
-
-	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestMakeGetRequest_FailureParsing(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("false"))
+		fmt.Fprintln(w, "invalid json")
 	}))
-	defer ts2.Close()
+	defer ts.Close()
 
-	s2 := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts2.URL,
-			Name:    "testSensor2",
-		},
-	}
+	sensorInfo, err := makeGetRequest(ts.URL, "test-sensor")
+	assert.ErrorIs(t, err, ErrParsingFailed)
+	assert.Equal(t, false, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
+}
 
-	t.Run("not detected", func(t *testing.T) {
-		detected, err := makePostRequest(s2.sensor.Address, s2.sensor.Name)
-		if err != nil {
-			t.Errorf("Expected no error, got %v", err)
-		}
-		if detected {
-			t.Errorf("Expected detected to be false, got %v", detected)
-		}
-	})
+func TestMakeGetRequest_FailureConnection(t *testing.T) {
+	sensorInfo, err := makeGetRequest("http://localhost:1234", "test-sensor")
+	assert.Error(t, err)
+	assert.Equal(t, false, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
+}
 
-	ts3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Sensor is disabled"))
-	}))
-	defer ts3.Close()
-
-	s3 := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts3.URL,
-			Name:    "testSensor3",
-		},
-	}
-
-	t.Run("http error", func(t *testing.T) {
-		_, err := makePostRequest(s3.sensor.Address, s3.sensor.Name)
-		if err == nil {
-			t.Errorf("Expected an error, got none")
-		}
-		if err.Error() != "testSensor3: Sensor is disabled" {
-			t.Errorf("Expected error to be 'testSensor3: Sensor is disabled', got %v", err)
-		}
-	})
-
-	ts4 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestMakePostRequest_Success(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid"))
+		fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
 	}))
-	defer ts4.Close()
+	defer ts.Close()
 
-	s4 := &sensorService{
-		sensor: &domain.Sensor{
-			Address: ts4.URL,
-			Name:    "testSensor4",
-		},
-	}
+	sensorInfo, err := makePostRequest(ts.URL, "test-sensor")
+	assert.NoError(t, err)
+	assert.Equal(t, true, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
+}
 
-	t.Run("parse error", func(t *testing.T) {
-		_, err := makePostRequest(s4.sensor.Address, s4.sensor.Name)
-		if !errors.Is(err, ErrParsingFailed) {
-			t.Errorf("Expected parsing error, got %v", err)
-		}
-	})
+func TestMakePostRequest_Failure(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, "Sensor is disabled")
+	}))
+	defer ts.Close()
+
+	sensorInfo, err := makePostRequest(ts.URL, "test-sensor")
+	assert.Error(t, err)
+	assert.Equal(t, false, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
+}
+
+func TestMakePostRequest_FailureParsing(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, "invalid json")
+	}))
+	defer ts.Close()
+
+	sensorInfo, err := makePostRequest(ts.URL, "test-sensor")
+	assert.ErrorIs(t, err, ErrParsingFailed)
+	assert.Equal(t, false, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
+}
+
+func TestMakePostRequest_FailureConnection(t *testing.T) {
+	sensorInfo, err := makePostRequest("http://localhost:1234", "test-sensor")
+	assert.Error(t, err)
+	assert.Equal(t, false, sensorInfo.Enabled)
+	assert.Equal(t, false, sensorInfo.Detected)
+}
+
+func TestGetInfo_Success(t *testing.T) {
+	expected := domain.SensorInfo{Enabled: true, Detected: false}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(expected)
+	}))
+	defer server.Close()
+
+	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
+	sensorInfo, err := service.GetInfo()
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, sensorInfo)
+}
+
+func TestGetInfo_Failure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
+	sensorInfo, err := service.GetInfo()
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
 }
