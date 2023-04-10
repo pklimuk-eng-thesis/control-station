@@ -11,43 +11,52 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeGetRequest_Success(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
-	}))
-	defer ts.Close()
-
-	sensorInfo, err := makeGetRequest(ts.URL, "test-sensor")
-	assert.NoError(t, err)
-	assert.Equal(t, true, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
-}
-
-func TestMakeGetRequest_Failure(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Sensor is disabled")
-	}))
-	defer ts.Close()
-
-	sensorInfo, err := makeGetRequest(ts.URL, "test-sensor")
-	assert.Error(t, err)
-	assert.Equal(t, false, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
-}
-
-func TestMakeGetRequest_FailureParsing(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, "invalid json")
-	}))
-	defer ts.Close()
-
-	sensorInfo, err := makeGetRequest(ts.URL, "test-sensor")
-	assert.ErrorIs(t, err, ErrParsingFailed)
-	assert.Equal(t, false, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
+func TestMakeGetRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		ts      *httptest.Server
+		want    domain.SensorInfo
+		wantErr bool
+	}{
+		{
+			name: "Success",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
+			},
+			)),
+			want:    domain.SensorInfo{Enabled: true, Detected: false},
+			wantErr: false,
+		},
+		{
+			name: "Failure",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintln(w, "Sensor is disabled")
+			},
+			)),
+			want:    domain.SensorInfo{Enabled: false, Detected: false},
+			wantErr: true,
+		},
+		{
+			name: "FailureParsing",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprintln(w, "Invalid JSON")
+			},
+			)),
+			want:    domain.SensorInfo{Enabled: false, Detected: false},
+			wantErr: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sensorInfo, err := makeGetRequest(test.ts.URL, "test-sensor")
+			assert.Equal(t, test.want.Enabled, sensorInfo.Enabled)
+			assert.Equal(t, test.want.Detected, sensorInfo.Detected)
+			assert.Equal(t, test.wantErr, err != nil)
+		})
+	}
 }
 
 func TestMakeGetRequest_FailureConnection(t *testing.T) {
@@ -57,43 +66,52 @@ func TestMakeGetRequest_FailureConnection(t *testing.T) {
 	assert.Equal(t, false, sensorInfo.Detected)
 }
 
-func TestMakePostRequest_Success(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
-	}))
-	defer ts.Close()
-
-	sensorInfo, err := makePostRequest(ts.URL, "test-sensor")
-	assert.NoError(t, err)
-	assert.Equal(t, true, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
-}
-
-func TestMakePostRequest_Failure(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, "Sensor is disabled")
-	}))
-	defer ts.Close()
-
-	sensorInfo, err := makePostRequest(ts.URL, "test-sensor")
-	assert.Error(t, err)
-	assert.Equal(t, false, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
-}
-
-func TestMakePostRequest_FailureParsing(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, "invalid json")
-	}))
-	defer ts.Close()
-
-	sensorInfo, err := makePostRequest(ts.URL, "test-sensor")
-	assert.ErrorIs(t, err, ErrParsingFailed)
-	assert.Equal(t, false, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
+func TestMakePostRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		ts      *httptest.Server
+		want    domain.SensorInfo
+		wantErr bool
+	}{
+		{
+			name: "Success",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
+			},
+			)),
+			want:    domain.SensorInfo{Enabled: true, Detected: false},
+			wantErr: false,
+		},
+		{
+			name: "Failure",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintln(w, "Sensor is disabled")
+			},
+			)),
+			want:    domain.SensorInfo{Enabled: false, Detected: false},
+			wantErr: true,
+		},
+		{
+			name: "FailureParsing",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				fmt.Fprintln(w, "Invalid JSON")
+			},
+			)),
+			want:    domain.SensorInfo{Enabled: false, Detected: false},
+			wantErr: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sensorInfo, err := makePostRequest(test.ts.URL, "test-sensor")
+			assert.Equal(t, test.want.Enabled, sensorInfo.Enabled)
+			assert.Equal(t, test.want.Detected, sensorInfo.Detected)
+			assert.Equal(t, test.wantErr, err != nil)
+		})
+	}
 }
 
 func TestMakePostRequest_FailureConnection(t *testing.T) {
