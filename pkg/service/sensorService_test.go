@@ -132,3 +132,63 @@ func TestGetInfo_Failure(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
 }
+
+func TestToggleEnabled_Success(t *testing.T) {
+	expected := domain.SensorInfo{Enabled: true, Detected: false}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(expected)
+	}))
+	defer server.Close()
+
+	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
+	sensorInfo, err := service.ToggleEnabled()
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, sensorInfo)
+}
+
+func TestToggleEnabled_Failure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
+	sensorInfo, err := service.ToggleEnabled()
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
+}
+
+func TestToggleDetected_Success(t *testing.T) {
+	expected := domain.SensorInfo{Enabled: true, Detected: false}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(expected)
+	}))
+	defer server.Close()
+
+	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
+	sensorInfo, err := service.ToggleDetected()
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, sensorInfo)
+}
+
+func TestToggleDetected_Failure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
+	sensorInfo, err := service.ToggleDetected()
+
+	assert.Error(t, err)
+	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
+}
