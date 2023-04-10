@@ -25,6 +25,7 @@ type SensorService interface {
 	GetInfo() (domain.SensorInfo, error)
 	ToggleEnabled() (domain.SensorInfo, error)
 	ToggleDetected() (domain.SensorInfo, error)
+	GetSensorLogsFromDataServiceLimitN(limit int) ([]domain.SensorData, error)
 }
 
 type sensorService struct {
@@ -45,6 +46,33 @@ func (s *sensorService) ToggleEnabled() (domain.SensorInfo, error) {
 
 func (s *sensorService) ToggleDetected() (domain.SensorInfo, error) {
 	return makePostRequest(s.sensor.Address+sensorDetectedEndpoint, s.sensor.Name)
+}
+
+func (s *sensorService) GetSensorLogsFromDataServiceLimitN(limit int) ([]domain.SensorData, error) {
+	dataServiceAddress = utils.GetEnvVariableOrDefault("DATA_SERVICE_ADDRESS", "http://localhost:8087")
+	url := fmt.Sprintf("%s/%s/latest?limit=%d", dataServiceAddress, s.sensor.Name, limit)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, ErrParsingFailed
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s: %s", s.sensor.Name, string(body))
+	}
+
+	var sensorLogs []domain.SensorData
+	err = json.Unmarshal(body, &sensorLogs)
+	if err != nil {
+		return nil, ErrParsingFailed
+	}
+
+	return sensorLogs, nil
 }
 
 func makeGetRequest(address string, sensorName string) (domain.SensorInfo, error) {

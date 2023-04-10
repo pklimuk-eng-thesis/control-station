@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	sService "github.com/pklimuk-eng-thesis/control-station/pkg/service"
@@ -43,4 +44,21 @@ func (h *SensorHandler) ToggleDetected(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, &sensorInfo)
+}
+
+func (h *SensorHandler) GetSensorLogsLimitN(c *gin.Context) {
+	limitStr := c.Query("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid limit parameter")
+		return
+	}
+
+	sensorLogs, err := h.service.GetSensorLogsFromDataServiceLimitN(limit)
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, &sensorLogs)
 }

@@ -71,6 +71,60 @@ func (_c *MockSensorService_GetInfo_Call) RunAndReturn(run func() (domain.Sensor
 	return _c
 }
 
+// GetSensorLogsFromDataServiceLimitN provides a mock function with given fields: limit
+func (_m *MockSensorService) GetSensorLogsFromDataServiceLimitN(limit int) ([]domain.SensorData, error) {
+	ret := _m.Called(limit)
+
+	var r0 []domain.SensorData
+	var r1 error
+	if rf, ok := ret.Get(0).(func(int) ([]domain.SensorData, error)); ok {
+		return rf(limit)
+	}
+	if rf, ok := ret.Get(0).(func(int) []domain.SensorData); ok {
+		r0 = rf(limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.SensorData)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(int) error); ok {
+		r1 = rf(limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockSensorService_GetSensorLogsFromDataServiceLimitN_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSensorLogsFromDataServiceLimitN'
+type MockSensorService_GetSensorLogsFromDataServiceLimitN_Call struct {
+	*mock.Call
+}
+
+// GetSensorLogsFromDataServiceLimitN is a helper method to define mock.On call
+//   - limit int
+func (_e *MockSensorService_Expecter) GetSensorLogsFromDataServiceLimitN(limit interface{}) *MockSensorService_GetSensorLogsFromDataServiceLimitN_Call {
+	return &MockSensorService_GetSensorLogsFromDataServiceLimitN_Call{Call: _e.mock.On("GetSensorLogsFromDataServiceLimitN", limit)}
+}
+
+func (_c *MockSensorService_GetSensorLogsFromDataServiceLimitN_Call) Run(run func(limit int)) *MockSensorService_GetSensorLogsFromDataServiceLimitN_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(int))
+	})
+	return _c
+}
+
+func (_c *MockSensorService_GetSensorLogsFromDataServiceLimitN_Call) Return(_a0 []domain.SensorData, _a1 error) *MockSensorService_GetSensorLogsFromDataServiceLimitN_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockSensorService_GetSensorLogsFromDataServiceLimitN_Call) RunAndReturn(run func(int) ([]domain.SensorData, error)) *MockSensorService_GetSensorLogsFromDataServiceLimitN_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ToggleDetected provides a mock function with given fields:
 func (_m *MockSensorService) ToggleDetected() (domain.SensorInfo, error) {
 	ret := _m.Called()
