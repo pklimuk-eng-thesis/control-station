@@ -1,13 +1,16 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
+	"github.com/pklimuk-eng-thesis/control-station/utils"
 )
 
 var ErrParsingFailed = errors.New("Parsing failed")
@@ -15,6 +18,7 @@ var ErrParsingFailed = errors.New("Parsing failed")
 var sensorEnabledEndpoint = "/enabled"
 var sensorDetectedEndpoint = "/detected"
 var sensorInfoEndpoint = "/info"
+var dataServiceAddress = utils.GetEnvVariableOrDefault("DATA_SERVICE_ADDRESS", "http://localhost:8087")
 
 //go:generate --name SensorService --output mock_sensorService.go
 type SensorService interface {
@@ -65,6 +69,11 @@ func makeGetRequest(address string, sensorName string) (domain.SensorInfo, error
 		return domain.SensorInfo{Enabled: false, Detected: false}, ErrParsingFailed
 	}
 
+	err = sendSensorLogsToDataService(dataServiceAddress, sensorName, sensorInfo)
+	if err != nil {
+		log.Println("Failed to send sensor logs to data service: ", err)
+	}
+
 	return sensorInfo, nil
 }
 
@@ -90,5 +99,35 @@ func makePostRequest(address string, sensorName string) (domain.SensorInfo, erro
 		return domain.SensorInfo{Enabled: false, Detected: false}, ErrParsingFailed
 	}
 
+	err = sendSensorLogsToDataService(dataServiceAddress, sensorName, sensorInfo)
+	if err != nil {
+		log.Println("Failed to send sensor logs to data service: ", err)
+	}
+
 	return sensorInfo, nil
+}
+
+func sendSensorLogsToDataService(address string, sensorName string, sensorInfo domain.SensorInfo) error {
+	jsonValue, err := json.Marshal(sensorInfo)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/%s/add", address, sensorName)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ErrParsingFailed
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%s: %s", sensorName, string(body))
+	}
+
+	return nil
 }

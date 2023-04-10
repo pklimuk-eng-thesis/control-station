@@ -210,3 +210,37 @@ func TestToggleDetected_Failure(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
 }
+
+func TestSendSensorLogsToDataService(t *testing.T) {
+	tests := []struct {
+		name       string
+		ts         *httptest.Server
+		sensorInfo domain.SensorInfo
+		wantErr    bool
+	}{
+		{
+			name: "Success",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			},
+			)),
+			sensorInfo: domain.SensorInfo{Enabled: true, Detected: false},
+			wantErr:    false,
+		},
+		{
+			name: "Failure",
+			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			)),
+			sensorInfo: domain.SensorInfo{Enabled: true, Detected: false},
+			wantErr:    true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := sendSensorLogsToDataService(test.ts.URL, "test-sensor", test.sensorInfo)
+			assert.Equal(t, test.wantErr, err != nil)
+		})
+	}
+}
