@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
-	"github.com/pklimuk-eng-thesis/control-station/pkg/service"
+	service "github.com/pklimuk-eng-thesis/control-station/pkg/service/sensor"
 	"github.com/stretchr/testify/assert"
 )
 

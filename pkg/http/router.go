@@ -1,13 +1,16 @@
 package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	sensor "github.com/pklimuk-eng-thesis/control-station/pkg/http/sensor"
+)
 
 var enabledEndpoint = "/enabled"
 var detectedEndpoint = "/detected"
 var infoEndpoint = "/info"
 var logsEndpoint = "/logs"
 
-func SetupSensorRouter(r *gin.Engine, sH *SensorHandler, groupName string) {
+func SetupSensorRouter(r *gin.Engine, sH *sensor.SensorHandler, groupName string) {
 	route := r.Group(groupName)
 	route.GET(infoEndpoint, sH.GetInfo)
 	route.PATCH(enabledEndpoint, sH.ToggleEnabled)

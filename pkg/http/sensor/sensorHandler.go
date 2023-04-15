@@ -5,14 +5,14 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	sService "github.com/pklimuk-eng-thesis/control-station/pkg/service"
+	sensorService "github.com/pklimuk-eng-thesis/control-station/pkg/service/sensor"
 )
 
 type SensorHandler struct {
-	service sService.SensorService
+	service sensorService.SensorService
 }
 
-func NewSensorHandler(service sService.SensorService) *SensorHandler {
+func NewSensorHandler(service sensorService.SensorService) *SensorHandler {
 	return &SensorHandler{service: service}
 }
 

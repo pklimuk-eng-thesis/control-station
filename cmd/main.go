@@ -7,8 +7,9 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
-	sHttp "github.com/pklimuk-eng-thesis/control-station/pkg/http"
-	sService "github.com/pklimuk-eng-thesis/control-station/pkg/service"
+	"github.com/pklimuk-eng-thesis/control-station/pkg/http"
+	sensorHttp "github.com/pklimuk-eng-thesis/control-station/pkg/http/sensor"
+	sensorService "github.com/pklimuk-eng-thesis/control-station/pkg/service/sensor"
 	"github.com/pklimuk-eng-thesis/control-station/utils"
 )
 
@@ -38,7 +39,7 @@ func main() {
 
 func initializeSensor(name string, address string, groupName string, r *gin.Engine) {
 	sensor := domain.Sensor{Name: name, Address: address}
-	sensorService := sService.NewSensorService(&sensor)
-	sensorHandler := sHttp.NewSensorHandler(sensorService)
-	sHttp.SetupSensorRouter(r, sensorHandler, groupName)
+	sensorService := sensorService.NewSensorService(&sensor)
+	sensorHandler := sensorHttp.NewSensorHandler(sensorService)
+	http.SetupSensorRouter(r, sensorHandler, groupName)
 }
