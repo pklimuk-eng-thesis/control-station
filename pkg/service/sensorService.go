@@ -41,11 +41,11 @@ func (s *sensorService) GetInfo() (domain.SensorInfo, error) {
 }
 
 func (s *sensorService) ToggleEnabled() (domain.SensorInfo, error) {
-	return makePostRequest(s.sensor.Address+sensorEnabledEndpoint, s.sensor.Name)
+	return makePatchRequest(s.sensor.Address+sensorEnabledEndpoint, s.sensor.Name)
 }
 
 func (s *sensorService) ToggleDetected() (domain.SensorInfo, error) {
-	return makePostRequest(s.sensor.Address+sensorDetectedEndpoint, s.sensor.Name)
+	return makePatchRequest(s.sensor.Address+sensorDetectedEndpoint, s.sensor.Name)
 }
 
 func (s *sensorService) GetSensorLogsFromDataServiceLimitN(limit int) ([]domain.SensorData, error) {
@@ -105,8 +105,15 @@ func makeGetRequest(address string, sensorName string) (domain.SensorInfo, error
 	return sensorInfo, nil
 }
 
-func makePostRequest(address string, sensorName string) (domain.SensorInfo, error) {
-	resp, err := http.Post(address, "application/json", nil)
+func makePatchRequest(address string, sensorName string) (domain.SensorInfo, error) {
+	req, err := http.NewRequest(http.MethodPatch, address, nil)
+	if err != nil {
+		return domain.SensorInfo{Enabled: false, Detected: false}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return domain.SensorInfo{Enabled: false, Detected: false}, err
 	}

@@ -68,7 +68,7 @@ func TestMakeGetRequest_FailureConnection(t *testing.T) {
 	assert.Equal(t, false, sensorInfo.Detected)
 }
 
-func TestMakePostRequest(t *testing.T) {
+func TestMakePatchRequest(t *testing.T) {
 	tests := []struct {
 		name    string
 		ts      *httptest.Server
@@ -108,7 +108,7 @@ func TestMakePostRequest(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sensorInfo, err := makePostRequest(test.ts.URL, "test-sensor")
+			sensorInfo, err := makePatchRequest(test.ts.URL, "test-sensor")
 			assert.Equal(t, test.want.Enabled, sensorInfo.Enabled)
 			assert.Equal(t, test.want.Detected, sensorInfo.Detected)
 			assert.Equal(t, test.wantErr, err != nil)
@@ -116,8 +116,8 @@ func TestMakePostRequest(t *testing.T) {
 	}
 }
 
-func TestMakePostRequest_FailureConnection(t *testing.T) {
-	sensorInfo, err := makePostRequest("http://localhost:1234", "test-sensor")
+func TestMakePatchRequest_FailureConnection(t *testing.T) {
+	sensorInfo, err := makePatchRequest("http://localhost:1234", "test-sensor")
 	assert.Error(t, err)
 	assert.Equal(t, false, sensorInfo.Enabled)
 	assert.Equal(t, false, sensorInfo.Detected)
