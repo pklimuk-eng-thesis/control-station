@@ -3,7 +3,6 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,8 +11,6 @@ import (
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
 	"github.com/pklimuk-eng-thesis/control-station/utils"
 )
-
-var ErrParsingFailed = errors.New("Parsing failed")
 
 var sensorEnabledEndpoint = "/enabled"
 var sensorDetectedEndpoint = "/detected"
@@ -59,7 +56,7 @@ func (s *sensorService) GetSensorLogsFromDataServiceLimitN(limit int) ([]domain.
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, ErrParsingFailed
+		return nil, utils.ErrParsingFailed
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -69,7 +66,7 @@ func (s *sensorService) GetSensorLogsFromDataServiceLimitN(limit int) ([]domain.
 	var sensorLogs []domain.SensorData
 	err = json.Unmarshal(body, &sensorLogs)
 	if err != nil {
-		return nil, ErrParsingFailed
+		return nil, utils.ErrParsingFailed
 	}
 
 	return sensorLogs, nil
@@ -84,7 +81,7 @@ func makeGetRequest(address string, sensorName string) (domain.SensorInfo, error
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return domain.SensorInfo{Enabled: false, Detected: false}, ErrParsingFailed
+		return domain.SensorInfo{Enabled: false, Detected: false}, utils.ErrParsingFailed
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -94,7 +91,7 @@ func makeGetRequest(address string, sensorName string) (domain.SensorInfo, error
 	var sensorInfo domain.SensorInfo
 	err = json.Unmarshal(body, &sensorInfo)
 	if err != nil {
-		return domain.SensorInfo{Enabled: false, Detected: false}, ErrParsingFailed
+		return domain.SensorInfo{Enabled: false, Detected: false}, utils.ErrParsingFailed
 	}
 
 	err = sendSensorLogsToDataService(dataServiceAddress, sensorName, sensorInfo)
@@ -121,7 +118,7 @@ func makePatchRequest(address string, sensorName string) (domain.SensorInfo, err
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return domain.SensorInfo{Enabled: false, Detected: false}, ErrParsingFailed
+		return domain.SensorInfo{Enabled: false, Detected: false}, utils.ErrParsingFailed
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -131,7 +128,7 @@ func makePatchRequest(address string, sensorName string) (domain.SensorInfo, err
 	var sensorInfo domain.SensorInfo
 	err = json.Unmarshal(body, &sensorInfo)
 	if err != nil {
-		return domain.SensorInfo{Enabled: false, Detected: false}, ErrParsingFailed
+		return domain.SensorInfo{Enabled: false, Detected: false}, utils.ErrParsingFailed
 	}
 
 	err = sendSensorLogsToDataService(dataServiceAddress, sensorName, sensorInfo)
@@ -157,7 +154,7 @@ func sendSensorLogsToDataService(address string, sensorName string, sensorInfo d
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ErrParsingFailed
+		return utils.ErrParsingFailed
 	}
 
 	if resp.StatusCode != http.StatusOK {

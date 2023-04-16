@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
 	service "github.com/pklimuk-eng-thesis/control-station/pkg/service/sensor"
+	"github.com/pklimuk-eng-thesis/control-station/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +30,7 @@ func TestGetInfo_Success(t *testing.T) {
 
 func TestGetInfo_ParsingFailure(t *testing.T) {
 	sensorService := new(service.MockSensorService)
-	sensorService.EXPECT().GetInfo().Return(domain.SensorInfo{Enabled: false, Detected: false}, service.ErrParsingFailed)
+	sensorService.EXPECT().GetInfo().Return(domain.SensorInfo{Enabled: false, Detected: false}, utils.ErrParsingFailed)
 
 	sensorHandler := NewSensorHandler(sensorService)
 
@@ -57,7 +58,7 @@ func TestToggleEnabled_Success(t *testing.T) {
 
 func TestToggleEnabled_ParsingFailure(t *testing.T) {
 	sensorService := new(service.MockSensorService)
-	sensorService.EXPECT().ToggleEnabled().Return(domain.SensorInfo{Enabled: false, Detected: false}, service.ErrParsingFailed)
+	sensorService.EXPECT().ToggleEnabled().Return(domain.SensorInfo{Enabled: false, Detected: false}, utils.ErrParsingFailed)
 
 	sensorHandler := NewSensorHandler(sensorService)
 
@@ -85,7 +86,7 @@ func TestToggleDetected_Success(t *testing.T) {
 
 func TestToggleDetected_ParsingFailure(t *testing.T) {
 	sensorService := new(service.MockSensorService)
-	sensorService.EXPECT().ToggleDetected().Return(domain.SensorInfo{Enabled: false, Detected: false}, service.ErrParsingFailed)
+	sensorService.EXPECT().ToggleDetected().Return(domain.SensorInfo{Enabled: false, Detected: false}, utils.ErrParsingFailed)
 
 	sensorHandler := NewSensorHandler(sensorService)
 
@@ -130,7 +131,7 @@ func TestGetSensorLogsLimitN(t *testing.T) {
 
 func TestGetSensorLogsLimitN_ParsingFailure(t *testing.T) {
 	sensorService := new(service.MockSensorService)
-	sensorService.EXPECT().GetSensorLogsFromDataServiceLimitN(2).Return([]domain.SensorData{}, service.ErrParsingFailed)
+	sensorService.EXPECT().GetSensorLogsFromDataServiceLimitN(2).Return([]domain.SensorData{}, utils.ErrParsingFailed)
 
 	sensorHandler := NewSensorHandler(sensorService)
 
