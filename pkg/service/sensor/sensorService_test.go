@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeGetRequest(t *testing.T) {
+func TestGetInfo(t *testing.T) {
 	tests := []struct {
 		name    string
 		ts      *httptest.Server
@@ -23,8 +22,9 @@ func TestMakeGetRequest(t *testing.T) {
 		{
 			name: "Success",
 			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
+				json.NewEncoder(w).Encode(domain.SensorInfo{Enabled: true, Detected: false})
 			},
 			)),
 			want:    domain.SensorInfo{Enabled: true, Detected: false},
@@ -33,42 +33,27 @@ func TestMakeGetRequest(t *testing.T) {
 		{
 			name: "Failure",
 			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintln(w, "Sensor is disabled")
 			},
 			)),
-			want:    domain.SensorInfo{Enabled: false, Detected: false},
-			wantErr: true,
-		},
-		{
-			name: "FailureParsing",
-			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				fmt.Fprintln(w, "Invalid JSON")
-			},
-			)),
-			want:    domain.SensorInfo{Enabled: false, Detected: false},
+			want:    domain.SensorInfo{},
 			wantErr: true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sensorInfo, err := makeGetRequest(test.ts.URL, "test-sensor")
-			assert.Equal(t, test.want.Enabled, sensorInfo.Enabled)
-			assert.Equal(t, test.want.Detected, sensorInfo.Detected)
+			defer test.ts.Close()
+			service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: test.ts.URL}}
+			got, err := service.GetInfo()
+
+			assert.Equal(t, test.want, got)
 			assert.Equal(t, test.wantErr, err != nil)
 		})
 	}
 }
 
-func TestMakeGetRequest_FailureConnection(t *testing.T) {
-	sensorInfo, err := makeGetRequest("http://localhost:1234", "test-sensor")
-	assert.Error(t, err)
-	assert.Equal(t, false, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
-}
-
-func TestMakePatchRequest(t *testing.T) {
+func TestToggleEnabled(t *testing.T) {
 	tests := []struct {
 		name    string
 		ts      *httptest.Server
@@ -78,8 +63,9 @@ func TestMakePatchRequest(t *testing.T) {
 		{
 			name: "Success",
 			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				fmt.Fprintln(w, `{"enabled": true, "detected": false}`)
+				json.NewEncoder(w).Encode(domain.SensorInfo{Enabled: true, Detected: false})
 			},
 			)),
 			want:    domain.SensorInfo{Enabled: true, Detected: false},
@@ -88,160 +74,62 @@ func TestMakePatchRequest(t *testing.T) {
 		{
 			name: "Failure",
 			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintln(w, "Sensor is disabled")
 			},
 			)),
-			want:    domain.SensorInfo{Enabled: false, Detected: false},
-			wantErr: true,
-		},
-		{
-			name: "FailureParsing",
-			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				fmt.Fprintln(w, "Invalid JSON")
-			},
-			)),
-			want:    domain.SensorInfo{Enabled: false, Detected: false},
+			want:    domain.SensorInfo{},
 			wantErr: true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sensorInfo, err := makePatchRequest(test.ts.URL, "test-sensor")
-			assert.Equal(t, test.want.Enabled, sensorInfo.Enabled)
-			assert.Equal(t, test.want.Detected, sensorInfo.Detected)
+			defer test.ts.Close()
+			service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: test.ts.URL}}
+			got, err := service.ToggleEnabled()
+
+			assert.Equal(t, test.want, got)
 			assert.Equal(t, test.wantErr, err != nil)
 		})
 	}
 }
 
-func TestMakePatchRequest_FailureConnection(t *testing.T) {
-	sensorInfo, err := makePatchRequest("http://localhost:1234", "test-sensor")
-	assert.Error(t, err)
-	assert.Equal(t, false, sensorInfo.Enabled)
-	assert.Equal(t, false, sensorInfo.Detected)
-}
-
-func TestGetInfo_Success(t *testing.T) {
-	expected := domain.SensorInfo{Enabled: true, Detected: false}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(expected)
-	}))
-	defer server.Close()
-
-	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
-	sensorInfo, err := service.GetInfo()
-
-	assert.NoError(t, err)
-	assert.Equal(t, expected, sensorInfo)
-}
-
-func TestGetInfo_Failure(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
-	sensorInfo, err := service.GetInfo()
-
-	assert.Error(t, err)
-	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
-}
-
-func TestToggleEnabled_Success(t *testing.T) {
-	expected := domain.SensorInfo{Enabled: true, Detected: false}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(expected)
-	}))
-	defer server.Close()
-
-	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
-	sensorInfo, err := service.ToggleEnabled()
-
-	assert.NoError(t, err)
-	assert.Equal(t, expected, sensorInfo)
-}
-
-func TestToggleEnabled_Failure(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
-	sensorInfo, err := service.ToggleEnabled()
-
-	assert.Error(t, err)
-	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
-}
-
-func TestToggleDetected_Success(t *testing.T) {
-	expected := domain.SensorInfo{Enabled: true, Detected: false}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(expected)
-	}))
-	defer server.Close()
-
-	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
-	sensorInfo, err := service.ToggleDetected()
-
-	assert.NoError(t, err)
-	assert.Equal(t, expected, sensorInfo)
-}
-
-func TestToggleDetected_Failure(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer server.Close()
-
-	service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: server.URL}}
-	sensorInfo, err := service.ToggleDetected()
-
-	assert.Error(t, err)
-	assert.Equal(t, domain.SensorInfo{}, sensorInfo)
-}
-
-func TestSendSensorLogsToDataService(t *testing.T) {
+func TestToggleDetected(t *testing.T) {
 	tests := []struct {
-		name       string
-		ts         *httptest.Server
-		sensorInfo domain.SensorInfo
-		wantErr    bool
+		name    string
+		ts      *httptest.Server
+		want    domain.SensorInfo
+		wantErr bool
 	}{
 		{
 			name: "Success",
 			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
+				json.NewEncoder(w).Encode(domain.SensorInfo{Enabled: true, Detected: false})
 			},
 			)),
-			sensorInfo: domain.SensorInfo{Enabled: true, Detected: false},
-			wantErr:    false,
+			want:    domain.SensorInfo{Enabled: true, Detected: false},
+			wantErr: false,
 		},
 		{
 			name: "Failure",
 			ts: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
 			},
 			)),
-			sensorInfo: domain.SensorInfo{Enabled: true, Detected: false},
-			wantErr:    true,
+			want:    domain.SensorInfo{},
+			wantErr: true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := sendSensorLogsToDataService(test.ts.URL, "test-sensor", test.sensorInfo)
+			defer test.ts.Close()
+			service := &sensorService{sensor: &domain.Sensor{Name: "test", Address: test.ts.URL}}
+			got, err := service.ToggleDetected()
+
+			assert.Equal(t, test.want, got)
 			assert.Equal(t, test.wantErr, err != nil)
 		})
 	}

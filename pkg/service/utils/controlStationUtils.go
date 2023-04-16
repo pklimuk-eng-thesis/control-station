@@ -12,8 +12,9 @@ import (
 	"github.com/pklimuk-eng-thesis/control-station/utils"
 )
 
-const DeviceInfoEndpoint = "/info"
-const DeviceEnabledEndpoint = "/enabled"
+const InfoEndpoint = "/info"
+const EnabledEndpoint = "/enabled"
+const DetectedEndpoint = "/detected"
 
 type SmartHomeDeviceInfo interface {
 	domain.SensorInfo | domain.DeviceInfo

@@ -20,12 +20,12 @@ func NewDeviceService(device *domain.Device) DeviceService {
 }
 
 func (s *deviceService) GetInfo() (domain.DeviceInfo, error) {
-	address := s.device.Address + controlStationUtils.DeviceInfoEndpoint
+	address := s.device.Address + controlStationUtils.InfoEndpoint
 	return controlStationUtils.MakeGetRequest(address, s.device.Name, domain.DeviceInfo{Enabled: false})
 }
 
 func (s *deviceService) ToggleEnabled() (domain.DeviceInfo, error) {
-	address := s.device.Address + controlStationUtils.DeviceEnabledEndpoint
+	address := s.device.Address + controlStationUtils.EnabledEndpoint
 	return controlStationUtils.MakePatchRequest(address, s.device.Name, domain.DeviceInfo{Enabled: false})
 }
 
