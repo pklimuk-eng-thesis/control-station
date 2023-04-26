@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -144,7 +143,7 @@ func TestGetDeviceLogsFromDataServiceLimitN(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			defer test.ts.Close()
-			os.Setenv("DATA_SERVICE_ADDRESS", test.ts.URL)
+			t.Setenv("DATA_SERVICE_ADDRESS", test.ts.URL)
 			service := &deviceService{device: &domain.Device{Name: "test", Address: test.ts.URL}}
 			got, err := service.GetDeviceLogsFromDataServiceLimitN(test.limit)
 

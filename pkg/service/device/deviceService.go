@@ -5,6 +5,7 @@ import (
 	controlStationUtils "github.com/pklimuk-eng-thesis/control-station/pkg/service/utils"
 )
 
+//go:generate --name DeviceService --output mock_deviceService.go
 type DeviceService interface {
 	GetInfo() (domain.DeviceInfo, error)
 	ToggleEnabled() (domain.DeviceInfo, error)
@@ -26,7 +27,7 @@ func (s *deviceService) GetInfo() (domain.DeviceInfo, error) {
 
 func (s *deviceService) ToggleEnabled() (domain.DeviceInfo, error) {
 	address := s.device.Address + controlStationUtils.EnabledEndpoint
-	return controlStationUtils.MakePatchRequest(address, s.device.Name, domain.DeviceInfo{Enabled: false})
+	return controlStationUtils.MakePatchRequest(address, s.device.Name, nil, domain.DeviceInfo{Enabled: false})
 }
 
 func (s *deviceService) GetDeviceLogsFromDataServiceLimitN(limit int) ([]domain.DeviceData, error) {

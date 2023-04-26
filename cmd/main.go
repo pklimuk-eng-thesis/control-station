@@ -8,8 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
 	"github.com/pklimuk-eng-thesis/control-station/pkg/http"
+	acHttp "github.com/pklimuk-eng-thesis/control-station/pkg/http/ac"
 	deviceHttp "github.com/pklimuk-eng-thesis/control-station/pkg/http/device"
 	sensorHttp "github.com/pklimuk-eng-thesis/control-station/pkg/http/sensor"
+	acService "github.com/pklimuk-eng-thesis/control-station/pkg/service/ac"
 	deviceService "github.com/pklimuk-eng-thesis/control-station/pkg/service/device"
 	sensorService "github.com/pklimuk-eng-thesis/control-station/pkg/service/sensor"
 	"github.com/pklimuk-eng-thesis/control-station/utils"
@@ -22,6 +24,7 @@ func main() {
 	doorsSensorAddress := utils.GetEnvVariableOrDefault("DOORS_SENSOR_ADDRESS", "http://localhost:8083")
 	smartBulbAddress := utils.GetEnvVariableOrDefault("SMART_BULB_ADDRESS", "http://localhost:8084")
 	smartPlugAddress := utils.GetEnvVariableOrDefault("SMART_PLUG_ADDRESS", "http://localhost:8085")
+	acAddress := utils.GetEnvVariableOrDefault("AC_ADDRESS", "http://localhost:8086")
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
@@ -38,6 +41,7 @@ func main() {
 	initializeSensor("doorsSensor", doorsSensorAddress, "/doorsSensor", r)
 	initializeDevice("smartBulb", smartBulbAddress, "/smartBulb", r)
 	initializeDevice("smartPlug", smartPlugAddress, "/smartPlug", r)
+	initializeAC("ac", acAddress, "/ac", r)
 
 	log.Printf("Starting service at %s\n", serviceAddress)
 	log.Fatal(r.Run(serviceAddress))
@@ -55,4 +59,11 @@ func initializeDevice(name string, address string, groupName string, r *gin.Engi
 	deviceService := deviceService.NewDeviceService(&device)
 	deviceHandler := deviceHttp.NewDeviceHandler(deviceService)
 	http.SetupDeviceRouter(r, deviceHandler, groupName)
+}
+
+func initializeAC(name string, address string, groupName string, r *gin.Engine) {
+	ac := domain.AC{Name: name, Address: address}
+	acService := acService.NewACService(&ac)
+	acHandler := acHttp.NewACHandler(acService)
+	http.SetupACRouter(r, acHandler, groupName)
 }

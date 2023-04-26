@@ -3,13 +3,7 @@ package service
 import (
 	"github.com/pklimuk-eng-thesis/control-station/pkg/domain"
 	controlStationUtils "github.com/pklimuk-eng-thesis/control-station/pkg/service/utils"
-	"github.com/pklimuk-eng-thesis/control-station/utils"
 )
-
-var sensorEnabledEndpoint = "/enabled"
-var sensorDetectedEndpoint = "/detected"
-var sensorInfoEndpoint = "/info"
-var dataServiceAddress = utils.GetEnvVariableOrDefault("DATA_SERVICE_ADDRESS", "http://localhost:8087")
 
 //go:generate --name SensorService --output mock_sensorService.go
 type SensorService interface {
@@ -34,12 +28,12 @@ func (s *sensorService) GetInfo() (domain.SensorInfo, error) {
 
 func (s *sensorService) ToggleEnabled() (domain.SensorInfo, error) {
 	address := s.sensor.Address + controlStationUtils.EnabledEndpoint
-	return controlStationUtils.MakePatchRequest(address, s.sensor.Name, domain.SensorInfo{Enabled: false, Detected: false})
+	return controlStationUtils.MakePatchRequest(address, s.sensor.Name, nil, domain.SensorInfo{Enabled: false, Detected: false})
 }
 
 func (s *sensorService) ToggleDetected() (domain.SensorInfo, error) {
 	address := s.sensor.Address + controlStationUtils.DetectedEndpoint
-	return controlStationUtils.MakePatchRequest(address, s.sensor.Name, domain.SensorInfo{Enabled: false, Detected: false})
+	return controlStationUtils.MakePatchRequest(address, s.sensor.Name, nil, domain.SensorInfo{Enabled: false, Detected: false})
 }
 
 func (s *sensorService) GetSensorLogsFromDataServiceLimitN(limit int) ([]domain.SensorData, error) {

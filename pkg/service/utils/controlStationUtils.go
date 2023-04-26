@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,13 +16,14 @@ import (
 const InfoEndpoint = "/info"
 const EnabledEndpoint = "/enabled"
 const DetectedEndpoint = "/detected"
+const UpdateEndpoint = "/update"
 
 type SmartHomeDeviceInfo interface {
-	domain.SensorInfo | domain.DeviceInfo
+	domain.SensorInfo | domain.DeviceInfo | domain.ACInfo
 }
 
 type SmartHomeDeviceData interface {
-	domain.SensorData | domain.DeviceData
+	domain.SensorData | domain.DeviceData | domain.ACData
 }
 
 func MakeGetRequest[V SmartHomeDeviceInfo](address string, deviceName string, defaultValueOnError V) (V, error) {
@@ -55,8 +57,17 @@ func MakeGetRequest[V SmartHomeDeviceInfo](address string, deviceName string, de
 	return deviceInfo, nil
 }
 
-func MakePatchRequest[V SmartHomeDeviceInfo](address string, deviceName string, defaultValueOnError V) (V, error) {
-	req, err := http.NewRequest(http.MethodPatch, address, nil)
+func MakePatchRequest[V SmartHomeDeviceInfo](address string, deviceName string, reqBody *V, defaultValueOnError V) (V, error) {
+	var encodedReqBody io.Reader = nil
+	if reqBody != nil {
+		jsonBody, err := json.Marshal(reqBody)
+		if err != nil {
+			return defaultValueOnError, err
+		}
+		encodedReqBody = bytes.NewBuffer(jsonBody)
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, address, encodedReqBody)
 	if err != nil {
 		return defaultValueOnError, err
 	}
