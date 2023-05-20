@@ -11,6 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewACService(t *testing.T) {
+	ac := domain.AC{Name: "test", Address: "http://test"}
+	service := NewACService(&ac)
+	assert.NotNil(t, service)
+}
+
 func TestGetInfo(t *testing.T) {
 	tests := []struct {
 		name    string

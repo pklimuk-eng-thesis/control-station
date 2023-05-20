@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -167,4 +168,22 @@ func TestUpdateACSettings_ParsingFailure(t *testing.T) {
 	acHandler.UpdateACSettings(c)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestUpdateACSettings_Error(t *testing.T) {
+	desiredTemp := float32(20)
+	desiredHum := float32(50)
+	acService := new(service.MockACService)
+	acService.EXPECT().UpdateACSettings(desiredTemp, desiredHum).Return(domain.ACInfo{}, errors.New("error"))
+
+	acHandler := NewACHandler(acService)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPatch, "/", strings.NewReader(`{"enabled":true,"temperature":20,"humidity":50}`))
+
+	acHandler.UpdateACSettings(c)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "error", w.Body.String())
 }

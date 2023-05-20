@@ -11,6 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewDeviceService(t *testing.T) {
+	device := domain.Device{Name: "test", Address: "http://test"}
+	service := NewDeviceService(&device)
+	assert.NotNil(t, service)
+}
+
 func TestGetInfo(t *testing.T) {
 	tests := []struct {
 		name    string

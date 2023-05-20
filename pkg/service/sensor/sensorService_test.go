@@ -11,6 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewSensorService(t *testing.T) {
+	sensor := domain.Sensor{Name: "test", Address: "http://test"}
+	service := NewSensorService(&sensor)
+	assert.NotNil(t, service)
+}
+
 func TestGetInfo(t *testing.T) {
 	tests := []struct {
 		name    string
